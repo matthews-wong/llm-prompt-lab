@@ -89,6 +89,66 @@ describe("checkAssertion", () => {
       checkAssertion("not json", { type: "json-schema", schema }).passed,
     ).toBe(false);
   });
+
+  it("checks a json-path value with equals", () => {
+    const output = '{"status":"ok","items":[{"id":1},{"id":2}]}';
+    expect(
+      checkAssertion(output, { type: "json-path", path: "status", equals: "ok" })
+        .passed,
+    ).toBe(true);
+    expect(
+      checkAssertion(output, { type: "json-path", path: "status", equals: "err" })
+        .passed,
+    ).toBe(false);
+  });
+
+  it("resolves json-path through arrays by numeric index", () => {
+    const output = '{"items":[{"id":1},{"id":2}]}';
+    expect(
+      checkAssertion(output, { type: "json-path", path: "items.1.id", equals: 2 })
+        .passed,
+    ).toBe(true);
+    expect(
+      checkAssertion(output, {
+        type: "json-path",
+        path: "items.0",
+        equals: { id: 1 },
+      }).passed,
+    ).toBe(true);
+  });
+
+  it("json-path without equals asserts only presence", () => {
+    const output = '{"status":"ok","items":[]}';
+    expect(
+      checkAssertion(output, { type: "json-path", path: "items" }).passed,
+    ).toBe(true);
+    const missing = checkAssertion(output, {
+      type: "json-path",
+      path: "missing.deep",
+    });
+    expect(missing.passed).toBe(false);
+    expect(missing.message).toContain("no value at path");
+  });
+
+  it("json-path treats a present null value as resolved", () => {
+    const output = '{"error":null}';
+    expect(
+      checkAssertion(output, { type: "json-path", path: "error" }).passed,
+    ).toBe(true);
+    expect(
+      checkAssertion(output, { type: "json-path", path: "error", equals: null })
+        .passed,
+    ).toBe(true);
+  });
+
+  it("json-path fails on non-JSON output", () => {
+    const result = checkAssertion("plain text", {
+      type: "json-path",
+      path: "status",
+    });
+    expect(result.passed).toBe(false);
+    expect(result.message).toContain("not valid JSON");
+  });
 });
 
 describe("validateShape", () => {
