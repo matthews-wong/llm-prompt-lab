@@ -13,7 +13,7 @@ A small TypeScript toolkit for prompt engineering: template rendering, a rough t
 
 1. **Template rendering** — `{{ variable }}` interpolation (with dot paths) and reusable `{{> partial }}` includes.
 2. **Token estimation** — a fast, dependency-free heuristic for rough budget checks.
-3. **Evaluation** — run prompts against fixture cases and assert on the output (`contains`, `regex`, exact `equals`, and a small JSON-shape validator).
+3. **Evaluation** — run prompts against fixture cases and assert on the output (`contains`, `regex`, exact `equals`, a small JSON-shape validator, and a `json-path` value check).
 
 Model calls go through a pluggable `Runner` interface. The bundled `MockRunner` makes the entire pipeline run **offline and deterministically**, so tests and the CLI need no API key. Swapping in a real provider is a single small class (see [Usage](#usage)).
 
@@ -43,7 +43,7 @@ The flow is always the same: **template → runner → evaluator**. Each stage i
 - `{{> partial }}` includes with recursion and cycle detection.
 - Strict mode (throws on missing variables/partials) or lenient mode (blanks them).
 - Rough token estimator for single strings and message arrays.
-- Evaluation harness with four assertion types: `contains` / `not-contains`, `equals`, `regex`, and `json-schema` (a minimal shape validator).
+- Evaluation harness with five assertion types: `contains` / `not-contains`, `equals`, `regex`, `json-schema` (a minimal shape validator), and `json-path` (resolve a dot path in JSON output and assert presence or an exact value).
 - Pluggable `Runner` interface with a scriptable, offline `MockRunner`.
 - A `render` and `eval` CLI, plus a strict, typed public API with JSDoc.
 

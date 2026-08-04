@@ -40,6 +40,7 @@ export {
   validateShape,
   type Assertion,
   type JsonShape,
+  type JsonValue,
   type EvalCase,
   type EvalSuite,
   type AssertionResult,

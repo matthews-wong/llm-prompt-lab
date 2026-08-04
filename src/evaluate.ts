@@ -12,6 +12,15 @@
 import { render, type TemplateContext } from "./template.js";
 import type { Runner } from "./runner.js";
 
+/** Any value that can appear in parsed JSON. Used by the `json-path` assertion. */
+export type JsonValue =
+  | string
+  | number
+  | boolean
+  | null
+  | JsonValue[]
+  | { [key: string]: JsonValue };
+
 /** A minimal, non-recursive shape description for structured-output checks. */
 export interface JsonShape {
   type: "object" | "array" | "string" | "number" | "boolean" | "null";
@@ -29,7 +38,8 @@ export type Assertion =
   | { type: "not-contains"; value: string; ignoreCase?: boolean }
   | { type: "equals"; value: string; trim?: boolean }
   | { type: "regex"; pattern: string; flags?: string }
-  | { type: "json-schema"; schema: JsonShape };
+  | { type: "json-schema"; schema: JsonShape }
+  | { type: "json-path"; path: string; equals?: JsonValue };
 
 /** A single evaluation case. Provide either `prompt` or `template`. */
 export interface EvalCase {
@@ -128,6 +138,41 @@ export function validateShape(
   return errors;
 }
 
+/**
+ * Resolve a dot path (e.g. `data.items.0.id`) against a parsed JSON value.
+ * Array elements are addressed by their numeric index as a path segment.
+ * Returns `undefined` when any segment is missing.
+ */
+function resolveJsonPath(root: unknown, path: string): unknown {
+  return path.split(".").reduce<unknown>((acc, key) => {
+    if (acc !== null && typeof acc === "object") {
+      return (acc as Record<string, unknown>)[key];
+    }
+    return undefined;
+  }, root);
+}
+
+/** Structural equality for JSON values (order-sensitive for arrays). */
+function deepEqual(a: unknown, b: unknown): boolean {
+  if (a === b) return true;
+  if (Array.isArray(a) || Array.isArray(b)) {
+    if (!Array.isArray(a) || !Array.isArray(b) || a.length !== b.length) return false;
+    return a.every((item, index) => deepEqual(item, b[index]));
+  }
+  if (a !== null && b !== null && typeof a === "object" && typeof b === "object") {
+    const aKeys = Object.keys(a as object);
+    const bKeys = Object.keys(b as object);
+    if (aKeys.length !== bKeys.length) return false;
+    return aKeys.every((key) =>
+      deepEqual(
+        (a as Record<string, unknown>)[key],
+        (b as Record<string, unknown>)[key],
+      ),
+    );
+  }
+  return false;
+}
+
 /** Evaluate a single assertion against a runner's output. */
 export function checkAssertion(output: string, assertion: Assertion): AssertionResult {
   const pass = (message: string): AssertionResult => ({
@@ -189,6 +234,28 @@ export function checkAssertion(output: string, assertion: Assertion): AssertionR
       return errors.length === 0
         ? pass("output matches JSON shape")
         : fail(`schema mismatch: ${errors.join("; ")}`);
+    }
+    case "json-path": {
+      let parsed: unknown;
+      try {
+        parsed = JSON.parse(output);
+      } catch {
+        return fail("output is not valid JSON");
+      }
+      const resolved = resolveJsonPath(parsed, assertion.path);
+      if (resolved === undefined) {
+        return fail(`no value at path "${assertion.path}"`);
+      }
+      // No `equals` given: assert only that the path resolves to a value.
+      if (assertion.equals === undefined) {
+        return pass(`path "${assertion.path}" is present`);
+      }
+      return deepEqual(resolved, assertion.equals)
+        ? pass(`path "${assertion.path}" equals expected value`)
+        : fail(
+            `path "${assertion.path}" is ${JSON.stringify(resolved)}, ` +
+              `expected ${JSON.stringify(assertion.equals)}`,
+          );
     }
   }
 }

@@ -30,7 +30,9 @@
               "items": { "type": "array", "items": { "type": "string" } }
             }
           }
-        }
+        },
+        { "type": "json-path", "path": "status", "equals": "ok" },
+        { "type": "json-path", "path": "items" }
       ]
     }
   ]
