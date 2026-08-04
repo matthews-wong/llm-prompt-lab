@@ -143,13 +143,15 @@ export class AnthropicRunner implements Runner {
     const model = request.model ?? "claude-opus-4-8";
     const message = await this.client.messages.create({
       model,
-      max_tokens: request.maxTokens ?? 1024,
+      max_tokens: request.maxTokens ?? 4096,
+      thinking: { type: "adaptive" }, // let the model decide how much to reason
       system: request.system,
       messages: [{ role: "user", content: request.prompt }],
     });
 
+    // A response may contain thinking blocks alongside text; keep only text.
     const text = message.content
-      .filter((block) => block.type === "text")
+      .filter((block): block is Anthropic.TextBlock => block.type === "text")
       .map((block) => block.text)
       .join("");
 
@@ -167,6 +169,15 @@ export class AnthropicRunner implements Runner {
 
 Then pass an `AnthropicRunner` instance to `runSuite` wherever you'd use `MockRunner`. The rest of the toolkit is unchanged.
 
+A complete, runnable version lives in [`examples/anthropic-runner.ts`](examples/anthropic-runner.ts) — it defines `AnthropicRunner` and evaluates a one-case suite against it:
+
+```bash
+export ANTHROPIC_API_KEY=sk-ant-...
+npx tsx examples/anthropic-runner.ts
+```
+
+Without a key set it prints setup instructions and exits, so it's safe to run anywhere. (`@anthropic-ai/sdk` is already a devDependency of this repo for the example; add it to your own project with `npm install @anthropic-ai/sdk`.)
+
 ## Project structure
 
 ```
@@ -179,7 +190,7 @@ llm-prompt-lab/
 │   ├── runner.ts      # Runner interface + MockRunner
 │   └── cli.ts         # `render` and `eval` commands (bin entry)
 ├── tests/             # Vitest: template, tokens, evaluate
-├── examples/          # sample template, eval suite, usage script
+├── examples/          # sample template, eval suite, usage + Anthropic-runner scripts
 ├── .github/workflows/ # CI: lint, test, build on Node 20
 ├── package.json
 ├── tsconfig.json
