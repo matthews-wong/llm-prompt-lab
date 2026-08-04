@@ -1,0 +1,37 @@
+{
+  "name": "example-suite",
+  "model": "mock-1",
+  "partials": {
+    "footer": "Respond concisely."
+  },
+  "cases": [
+    {
+      "name": "translation prompt renders the variables",
+      "template": "Translate the phrase '{{ text }}' into {{ language }}. {{> footer }}",
+      "vars": { "text": "Hello", "language": "French" },
+      "assertions": [
+        { "type": "contains", "value": "French" },
+        { "type": "contains", "value": "Hello" },
+        { "type": "regex", "pattern": "Translate the phrase '.+' into .+\\." },
+        { "type": "not-contains", "value": "ERROR", "ignoreCase": true }
+      ]
+    },
+    {
+      "name": "structured output is valid json",
+      "prompt": "Extract the fields and return the result as json.",
+      "assertions": [
+        {
+          "type": "json-schema",
+          "schema": {
+            "type": "object",
+            "required": ["status"],
+            "properties": {
+              "status": { "type": "string" },
+              "items": { "type": "array", "items": { "type": "string" } }
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

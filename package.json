@@ -1,0 +1,54 @@
+{
+  "name": "llm-prompt-lab",
+  "version": "0.1.0",
+  "description": "A small TypeScript toolkit for prompt-engineering: template rendering, a rough token estimator, and an offline evaluation harness with a pluggable Runner interface.",
+  "keywords": [
+    "llm",
+    "prompt-engineering",
+    "prompt-template",
+    "evaluation",
+    "cli",
+    "typescript"
+  ],
+  "author": "Matthews Wong",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "bin": {
+    "llm-prompt-lab": "./dist/cli.js"
+  },
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint .",
+    "cli": "node --import tsx src/cli.ts"
+  },
+  "dependencies": {
+    "yaml": "^2.5.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "eslint": "^9.9.0",
+    "tsup": "^8.2.4",
+    "tsx": "^4.19.0",
+    "typescript": "^5.5.4",
+    "typescript-eslint": "^8.2.0",
+    "vitest": "^2.0.5"
+  }
+}
