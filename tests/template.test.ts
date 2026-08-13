@@ -54,8 +54,31 @@ describe("render", () => {
     expect(render("[{{ missing }}]", {}, { strict: false })).toBe("[]");
   });
 
+  it("renders a present null value as an empty string even in strict mode", () => {
+    // A present-but-null value is distinct from a missing one: it must not
+    // throw in strict mode, and stringifies to "".
+    expect(render("[{{ a }}]", { a: null })).toBe("[]");
+  });
+
+  it("treats a present-but-undefined value as missing in strict mode", () => {
+    // A key whose value is `undefined` is indistinguishable from an absent
+    // key, so strict mode throws just as it would for a missing variable.
+    expect(() => render("{{ a }}", { a: undefined })).toThrow(MissingVariableError);
+    // ...and lenient mode blanks it.
+    expect(render("[{{ a }}]", { a: undefined }, { strict: false })).toBe("[]");
+  });
+
+  it("throws when a nested dot-path is missing in strict mode", () => {
+    // `user` is absent, so `user.name` resolves to undefined and must throw.
+    expect(() => render("{{ user.name }}", {})).toThrow(MissingVariableError);
+  });
+
   it("throws on a missing partial in strict mode", () => {
     expect(() => render("{{> nope }}", {})).toThrow(MissingPartialError);
+  });
+
+  it("substitutes empty string for a missing partial when not strict", () => {
+    expect(render("[{{> nope }}]", {}, { strict: false })).toBe("[]");
   });
 
   it("detects partial cycles", () => {

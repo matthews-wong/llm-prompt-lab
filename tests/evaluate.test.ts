@@ -205,6 +205,24 @@ describe("runSuite", () => {
     expect(report.failed).toBe(0);
   });
 
+  it("aggregates an empty suite to a zeroed report without error", async () => {
+    const report = await runSuite({ name: "empty", cases: [] }, new MockRunner());
+    expect(report.total).toBe(0);
+    expect(report.passed).toBe(0);
+    expect(report.failed).toBe(0);
+    expect(report.cases).toEqual([]);
+  });
+
+  it("throws a clear error when a case has neither prompt nor template", async () => {
+    const suite = {
+      name: "malformed",
+      cases: [{ name: "no source", assertions: [] }],
+    } as unknown as EvalSuite;
+    await expect(runSuite(suite, new MockRunner())).rejects.toThrow(
+      /must define either "prompt" or "template"/,
+    );
+  });
+
   it("marks a case failed when an assertion does not hold", async () => {
     const suite: EvalSuite = {
       name: "failing",
